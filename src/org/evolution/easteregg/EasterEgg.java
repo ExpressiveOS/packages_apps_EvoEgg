@@ -29,7 +29,6 @@ import android.content.Intent;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Point;
@@ -57,6 +56,9 @@ public class EasterEgg extends Activity {
     public static class Board extends FrameLayout {
         public static final boolean FIXED_STARS = true;
         public static final int NUM_CATS = 20;
+        // The Bloom mark's petals (violet, blue, green, coral), mid tones, so the
+        // half-transparent stars read on light and dark backgrounds alike
+        static final int[] STAR_COLORS = { 0xFFAE69FC, 0xFF417BFC, 0xFF4AD29D, 0xFFFD7771 };
 
         static Random sRNG = new Random();
 
@@ -124,7 +126,7 @@ public class EasterEgg extends Activity {
                     ImageView fixedStar = new ImageView(getContext(), null);
                     if (DEBUG) fixedStar.setBackgroundColor(0x8000FF80);
                     fixedStar.setImageResource(R.drawable.star_anim); // @@@
-                    fixedStar.setColorFilter(Color.parseColor("#005eff"));
+                    fixedStar.setColorFilter(STAR_COLORS[i % STAR_COLORS.length]);
                     fixedStar.setAlpha(0.5F);
                     addView(fixedStar, wrap);
                     final float scale = randfrange(0.1f, 1f);
