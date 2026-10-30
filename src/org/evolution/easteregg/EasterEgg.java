@@ -26,6 +26,7 @@ import android.app.Activity;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -35,6 +36,7 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.os.Handler;
+import android.provider.Settings;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Pair;
@@ -60,6 +62,13 @@ public class EasterEgg extends Activity {
         // half-transparent stars read on light and dark backgrounds alike
         static final int[] STAR_COLORS = { 0xFFAE69FC, 0xFF417BFC, 0xFF4AD29D, 0xFFFD7771 };
 
+        // Settings.Secure key with the banner colours of the holiday theme that is
+        // on, written by the holiday themes in Settings and also read by the
+        // ExpressiveOS wordmark: "<id>;<sweep on dark>;<sweep on light>;<fringe on
+        // dark>;<fringe on light>", a sweep being 4 RRGGBB colours split by ','.
+        // Unset, empty or anything else means the Bloom colours above.
+        static final String KEY_HOLIDAY_PALETTE = "expressiveos_holiday_palette";
+
         static Random sRNG = new Random();
 
         static float lerp(float a, float b, float f) {
@@ -68,6 +77,57 @@ public class EasterEgg extends Activity {
 
         static float randfrange(float a, float b) {
             return lerp(a, b, sRNG.nextFloat());
+        }
+
+        // A holiday theme's colours for the stars while its banner is on, else
+        // Bloom's: its mid tones on the dark theme's background and its deep tones
+        // on the light theme's, where the mids would hardly show at half opacity
+        static int[] starColors(Context context) {
+            final String value;
+            try {
+                value = Settings.Secure.getString(
+                        context.getContentResolver(), KEY_HOLIDAY_PALETTE);
+            } catch (RuntimeException e) {
+                return STAR_COLORS;
+            }
+            if (value == null) return STAR_COLORS;
+
+            // -1 keeps empty trailing groups, so "a;b;c;d;e;" counts as six
+            final String[] groups = value.trim().split(";", -1);
+            if (groups.length != 5 || groups[0].isEmpty() || groups[0].indexOf(',') >= 0) {
+                return STAR_COLORS;
+            }
+            final boolean night = (context.getResources().getConfiguration().uiMode
+                    & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+            final int[] colors = parseColors(night ? groups[1] : groups[2]);
+            return colors != null ? colors : STAR_COLORS;
+        }
+
+        // Exactly four opaque colours from RRGGBB hex split by ',', else null
+        static int[] parseColors(String group) {
+            final String[] parts = group.split(",", -1);
+            if (parts.length != 4) return null;
+            final int[] colors = new int[4];
+            for (int i = 0; i < 4; i++) {
+                final String part = parts[i];
+                if (part.length() != 6) return null;
+                int rgb = 0;
+                for (int j = 0; j < 6; j++) {
+                    final int digit = hexDigit(part.charAt(j));
+                    if (digit < 0) return null;
+                    rgb = (rgb << 4) | digit;
+                }
+                colors[i] = 0xFF000000 | rgb;
+            }
+            return colors;
+        }
+
+        // Only ASCII hex digits (Character.digit also takes other scripts' digits)
+        static int hexDigit(char c) {
+            if (c >= '0' && c <= '9') return c - '0';
+            if (c >= 'A' && c <= 'F') return c - 'A' + 10;
+            if (c >= 'a' && c <= 'f') return c - 'a' + 10;
+            return -1;
         }
 
         public class FlyingCat extends ImageView {
@@ -122,11 +182,12 @@ public class EasterEgg extends Activity {
                     ViewGroup.LayoutParams.WRAP_CONTENT);
 
             if (FIXED_STARS) {
+                final int[] colors = starColors(getContext());
                 for (int i = 0; i < 20; i++) {
                     ImageView fixedStar = new ImageView(getContext(), null);
                     if (DEBUG) fixedStar.setBackgroundColor(0x8000FF80);
                     fixedStar.setImageResource(R.drawable.star_anim); // @@@
-                    fixedStar.setColorFilter(STAR_COLORS[i % STAR_COLORS.length]);
+                    fixedStar.setColorFilter(colors[i % colors.length]);
                     fixedStar.setAlpha(0.5F);
                     addView(fixedStar, wrap);
                     final float scale = randfrange(0.1f, 1f);
@@ -185,7 +246,10 @@ public class EasterEgg extends Activity {
         @Override
         protected void onDetachedFromWindow() {
             super.onDetachedFromWindow();
-            mAnim.cancel();
+            // None yet when the board goes before its first layout's reset()
+            if (mAnim != null) {
+                mAnim.cancel();
+            }
         }
 
         @Override
