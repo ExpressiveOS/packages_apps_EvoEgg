@@ -16,7 +16,7 @@
 
 // Referenced from https://github.com/AICP/packages_apps_Settings/blob/n7.1/src/com/android/settings/aicp/Nyandroid.java
 
-package org.evolution.easteregg;
+package org.expressiveos.easteregg;
 
 import android.animation.AnimatorSet;
 import android.animation.PropertyValuesHolder;
@@ -50,7 +50,7 @@ import android.widget.ImageView;
 import java.util.HashMap;
 import java.util.Random;
 
-import org.evolution.easteregg.R;
+import org.expressiveos.easteregg.R;
 
 public class EasterEgg extends Activity {
     final static boolean DEBUG = false;
@@ -141,7 +141,7 @@ public class EasterEgg extends Activity {
 
             public FlyingCat(Context context, AttributeSet as) {
                 super(context, as);
-                setImageResource(R.drawable.evoandroid_anim); // @@@
+                setImageResource(R.drawable.eggandroid_anim); // @@@
 
                 if (DEBUG) setBackgroundColor(0x80FF0000);
             }

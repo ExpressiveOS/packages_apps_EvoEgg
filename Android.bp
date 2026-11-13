@@ -4,7 +4,7 @@
 //
 
 android_app {
-    name: "EvoEgg",
+    name: "ExpressiveEgg",
     srcs: ["src/**/*.java"],
     resource_dirs: ["res"],
     certificate: "platform",
